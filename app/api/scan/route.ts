@@ -32,22 +32,30 @@ export async function POST(_req: NextRequest) {
             const result = await runTinyFishScan(source.url, GOAL_PROMPT);
             const findings = result.findings;
 
+            let newCount = 0;
             for (const finding of findings) {
-              await prisma.finding.create({
-                data: {
-                  institution: source.name,
-                  type: source.type,
-                  title: finding.title || "Untitled",
-                  summary: finding.summary || "",
-                  category: finding.category || "Policy",
-                  date: finding.date || new Date().toISOString().split("T")[0],
-                  sourceUrl: finding.sourceUrl || source.url,
-                },
+              const exists = await prisma.finding.findFirst({
+                where: { institution: source.name, title: finding.title || "Untitled" },
+                select: { id: true },
               });
+              if (!exists) {
+                await prisma.finding.create({
+                  data: {
+                    institution: source.name,
+                    type: source.type,
+                    title: finding.title || "Untitled",
+                    summary: finding.summary || "",
+                    category: finding.category || "Policy",
+                    date: finding.date || new Date().toISOString().split("T")[0],
+                    sourceUrl: finding.sourceUrl || source.url,
+                  },
+                });
+                newCount++;
+              }
             }
 
             sourcesScanned += 1;
-            totalFindings += findings.length;
+            totalFindings += newCount;
 
             await prisma.scanRun.update({
               where: { id: scanRun.id },
@@ -55,7 +63,7 @@ export async function POST(_req: NextRequest) {
             });
 
             controller.enqueue(
-              encode({ source: source.name, status: "done", findingsCount: findings.length })
+              encode({ source: source.name, status: "done", findingsCount: newCount })
             );
           } catch (err) {
             console.error(`Error scanning ${source.name}:`, err);

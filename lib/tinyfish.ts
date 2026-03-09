@@ -76,6 +76,7 @@ export async function runTinyFishScan(
         goal,
         browser_profile: "stealth",
         proxy_config: { enabled: true, country_code: "US" },
+        max_steps: 8,
       }),
     }
   );

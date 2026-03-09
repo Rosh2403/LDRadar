@@ -51,4 +51,4 @@ export const SOURCES = [
   },
 ] as const;
 
-export const GOAL_PROMPT = `You are an institutional investor intelligence analyst. Visit this page and extract any recent changes or announcements including: CIO or senior leadership appointments or departures, changes in asset allocation strategy or targets, new fund mandates or investment partnerships, policy updates or strategic shifts, any notable portfolio moves or investment decisions. For each finding return a JSON array called 'findings' where each item has: title (string), summary (string, 2-3 sentences max), category (one of: Leadership, Allocation, Mandate, Policy, Portfolio), date (string), sourceUrl (string, direct URL to the announcement). If nothing notable found return { findings: [] }.`;
+export const GOAL_PROMPT = `Extract recent announcements from this page. Look for: leadership changes, allocation shifts, new mandates, policy updates, portfolio moves. Return JSON only: {"findings":[{"title":"...","summary":"1-2 sentences","category":"Leadership|Allocation|Mandate|Policy|Portfolio","date":"...","sourceUrl":"..."}]}. If nothing found: {"findings":[]}.`;
