@@ -1,0 +1,29 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Finding {
+  id          String   @id @default(cuid())
+  institution String
+  type        String
+  title       String
+  summary     String
+  category    String
+  date        String
+  sourceUrl   String
+  scannedAt   DateTime @default(now())
+}
+
+model ScanRun {
+  id             String    @id @default(cuid())
+  startedAt      DateTime  @default(now())
+  completedAt    DateTime?
+  status         String
+  sourcesScanned Int       @default(0)
+  findingsCount  Int       @default(0)
+}
