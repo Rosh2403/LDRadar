@@ -6,7 +6,6 @@ LP Radar is an AI-powered monitoring engine that tracks institutional investors 
 
 Built for VCs, fund managers, and placement agents who need to know where the big money is moving **before** it becomes public knowledge.
 
-![LP Radar Dashboard](./public/screenshot.png)
 
 ---
 
