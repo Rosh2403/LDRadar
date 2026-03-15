@@ -1,4 +1,4 @@
-import Anthropic from "@anthropic-ai/sdk";
+import { GoogleGenerativeAI } from "@google/generative-ai";
 
 export interface BriefingData {
   summary: string;
@@ -17,21 +17,14 @@ export async function synthesizeFindings(
     date: string;
   }>
 ): Promise<BriefingData> {
-  const client = new Anthropic({
-    apiKey: process.env.ANTHROPIC_API_KEY,
-  });
+  const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
+  const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
   const findingsText = findings
     .map((f) => `[${f.institution} · ${f.category}] ${f.title}: ${f.summary}`)
     .join("\n");
 
-  const message = await client.messages.create({
-    model: "claude-3-5-haiku-20241022",
-    max_tokens: 1024,
-    messages: [
-      {
-        role: "user",
-        content: `You are an institutional investor intelligence analyst. Here are ${findings.length} fresh findings scraped from major LPs and institutional investors:
+  const prompt = `You are an institutional investor intelligence analyst. Here are ${findings.length} fresh findings scraped from major LPs and institutional investors:
 
 ${findingsText}
 
@@ -42,13 +35,10 @@ Analyze these findings and return JSON only (no markdown, no explanation):
   "hotSectors": ["sector or theme getting increased LP attention"],
   "activeLPs": ["institution names that are most active or making moves"],
   "watchList": ["specific things fund managers should monitor closely based on these signals"]
-}`,
-      },
-    ],
-  });
+}`;
 
-  const text =
-    message.content[0].type === "text" ? message.content[0].text : "";
+  const result = await model.generateContent(prompt);
+  const text = result.response.text();
 
   try {
     const jsonMatch = text.match(/\{[\s\S]*\}/);
@@ -58,7 +48,7 @@ Analyze these findings and return JSON only (no markdown, no explanation):
   }
 
   return {
-    summary: "Synthesis unavailable — check ANTHROPIC_API_KEY.",
+    summary: "Synthesis unavailable — check GEMINI_API_KEY.",
     patterns: [],
     hotSectors: [],
     activeLPs: [],

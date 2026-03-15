@@ -109,7 +109,7 @@ export async function POST(_req: NextRequest) {
       });
 
       // Synthesize findings into an intelligence briefing
-      if (totalFindings > 0 && process.env.ANTHROPIC_API_KEY) {
+      if (totalFindings > 0 && process.env.GEMINI_API_KEY) {
         controller.enqueue(encode({ synthesizing: true }));
         try {
           const recentFindings = await prisma.finding.findMany({
