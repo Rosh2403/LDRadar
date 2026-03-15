@@ -28,7 +28,7 @@ export interface Stats {
 
 export interface ScanEvent {
   source?: string;
-  status?: "scanning" | "done" | "error";
+  status?: "discovering" | "scanning" | "done" | "error";
   findingsCount?: number;
   synthesizing?: boolean;
   briefingReady?: boolean;

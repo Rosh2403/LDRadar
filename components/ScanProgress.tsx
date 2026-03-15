@@ -51,8 +51,8 @@ export default function ScanProgress({
             }}
           >
             <span style={{ width: 18, flexShrink: 0 }}>
-              {event.status === "scanning" ? (
-                <SpinnerInline />
+              {event.status === "discovering" || event.status === "scanning" ? (
+                <SpinnerInline color={event.status === "discovering" ? "#f59e0b" : "#6366f1"} />
               ) : event.status === "done" ? (
                 "✓"
               ) : (
@@ -60,6 +60,11 @@ export default function ScanProgress({
               )}
             </span>
             <span style={{ flex: 1, color: "inherit" }}>{event.source}</span>
+            {event.status === "discovering" && (
+              <span style={{ color: "#f59e0b", fontSize: 11 }}>
+                discovering news section...
+              </span>
+            )}
             {event.status === "scanning" && (
               <span style={{ color: "var(--muted)", fontSize: 11 }}>
                 scanning...
@@ -119,14 +124,14 @@ export default function ScanProgress({
   );
 }
 
-function SpinnerInline() {
+function SpinnerInline({ color = "#6366f1" }: { color?: string }) {
   return (
     <svg
       width="12"
       height="12"
       viewBox="0 0 24 24"
       fill="none"
-      stroke="#6366f1"
+      stroke={color}
       strokeWidth="2.5"
       style={{ animation: "spin 1s linear infinite", display: "block" }}
     >

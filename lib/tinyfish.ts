@@ -58,10 +58,13 @@ function extractJson(text: string): unknown {
 
 export async function runTinyFishScan(
   url: string,
-  goal: string
+  goal: string,
+  options: { maxSteps?: number } = {}
 ): Promise<TinyFishResult> {
   const apiKey = process.env.TINYFISH_API_KEY;
   if (!apiKey) throw new Error("TINYFISH_API_KEY is not set");
+
+  const maxSteps = options.maxSteps ?? 15;
 
   const response = await fetch(
     "https://agent.tinyfish.ai/v1/automation/run-sse",
@@ -76,7 +79,7 @@ export async function runTinyFishScan(
         goal,
         browser_profile: "stealth",
         proxy_config: { enabled: true, country_code: "US" },
-        max_steps: 15,
+        max_steps: maxSteps,
       }),
     }
   );

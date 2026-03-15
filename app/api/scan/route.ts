@@ -1,6 +1,6 @@
 import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { SOURCES, GOAL_PROMPT } from "@/lib/sources";
+import { SOURCES, GOAL_PROMPT, DISCOVERY_PROMPT } from "@/lib/sources";
 import { runTinyFishScan } from "@/lib/tinyfish";
 import { synthesizeFindings } from "@/lib/synthesize";
 
@@ -21,16 +21,29 @@ export async function POST(_req: NextRequest) {
       let sourcesScanned = 0;
       let totalFindings = 0;
 
-      // Emit "scanning" for all sources immediately so the UI shows all of them
+      // Emit "discovering" for all sources immediately so the UI shows all of them
       for (const source of SOURCES) {
-        controller.enqueue(encode({ source: source.name, status: "scanning", findingsCount: 0 }));
+        controller.enqueue(encode({ source: source.name, status: "discovering", findingsCount: 0 }));
       }
 
       // Scan all sources in parallel — each resolves independently and streams its result
       await Promise.allSettled(
         SOURCES.map(async (source) => {
           try {
-            const result = await runTinyFishScan(source.url, GOAL_PROMPT);
+            // Phase 1: Dynamic discovery — TinyFish navigates from the homepage to find the news section
+            // Falls back to direct URL scan if discovery fails
+            let result;
+            try {
+              result = await runTinyFishScan(source.homepageUrl, DISCOVERY_PROMPT, { maxSteps: 20 });
+              // If discovery found nothing, fall back to direct URL
+              if (result.findings.length === 0) {
+                result = await runTinyFishScan(source.url, GOAL_PROMPT, { maxSteps: 15 });
+              }
+            } catch {
+              // Discovery failed entirely — fall back to direct URL
+              result = await runTinyFishScan(source.url, GOAL_PROMPT, { maxSteps: 15 });
+            }
+
             const findings = result.findings;
 
             let newCount = 0;
