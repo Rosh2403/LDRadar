@@ -27,3 +27,14 @@ model ScanRun {
   sourcesScanned Int       @default(0)
   findingsCount  Int       @default(0)
 }
+
+model Briefing {
+  id           String   @id @default(cuid())
+  summary      String
+  patterns     String
+  hotSectors   String
+  activeLPs    String
+  watchList    String
+  findingCount Int      @default(0)
+  createdAt    DateTime @default(now())
+}

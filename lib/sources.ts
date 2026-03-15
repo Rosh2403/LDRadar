@@ -51,4 +51,9 @@ export const SOURCES = [
   },
 ] as const;
 
-export const GOAL_PROMPT = `Extract recent announcements from this page. Look for: leadership changes, allocation shifts, new mandates, policy updates, portfolio moves. Return JSON only: {"findings":[{"title":"...","summary":"1-2 sentences","category":"Leadership|Allocation|Mandate|Policy|Portfolio","date":"...","sourceUrl":"..."}]}. If nothing found: {"findings":[]}.`;
+export const GOAL_PROMPT = `You are scanning an institutional investor website for intelligence.
+1. On the landing page, identify the 3 most recent news items, press releases, or announcements.
+2. Click into each one and read the full article content — do not just skim the headline.
+3. Extract findings from the full article text. Look for: leadership appointments or departures, asset allocation changes, new fund mandates or partnerships, policy or strategy shifts, notable portfolio decisions.
+4. Return JSON only: {"findings":[{"title":"...","summary":"2-3 sentences with specific details from the article","category":"Leadership|Allocation|Mandate|Policy|Portfolio","date":"exact date from article","sourceUrl":"direct URL of the article page"}]}
+If nothing notable found: {"findings":[]}.`;

@@ -2,6 +2,7 @@ import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { SOURCES, GOAL_PROMPT } from "@/lib/sources";
 import { runTinyFishScan } from "@/lib/tinyfish";
+import { synthesizeFindings } from "@/lib/synthesize";
 
 export const runtime = "nodejs";
 export const maxDuration = 300;
@@ -84,6 +85,35 @@ export async function POST(_req: NextRequest) {
         where: { id: scanRun.id },
         data: { status: "completed", completedAt: new Date(), sourcesScanned, findingsCount: totalFindings },
       });
+
+      // Synthesize findings into an intelligence briefing
+      if (totalFindings > 0 && process.env.ANTHROPIC_API_KEY) {
+        controller.enqueue(encode({ synthesizing: true }));
+        try {
+          const recentFindings = await prisma.finding.findMany({
+            where: { scannedAt: { gte: scanRun.startedAt } },
+            orderBy: { scannedAt: "desc" },
+            select: { institution: true, category: true, title: true, summary: true, date: true },
+          });
+
+          const briefing = await synthesizeFindings(recentFindings);
+
+          await prisma.briefing.create({
+            data: {
+              summary: briefing.summary,
+              patterns: JSON.stringify(briefing.patterns),
+              hotSectors: JSON.stringify(briefing.hotSectors),
+              activeLPs: JSON.stringify(briefing.activeLPs),
+              watchList: JSON.stringify(briefing.watchList),
+              findingCount: recentFindings.length,
+            },
+          });
+
+          controller.enqueue(encode({ briefingReady: true }));
+        } catch (err) {
+          console.error("Synthesis failed:", err);
+        }
+      }
 
       controller.enqueue(encode({ done: true, totalFindings }));
       controller.close();
