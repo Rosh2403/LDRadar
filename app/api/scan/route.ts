@@ -21,14 +21,23 @@ export async function POST(_req: NextRequest) {
       let sourcesScanned = 0;
       let totalFindings = 0;
 
+      // Load custom sources from DB alongside hardcoded SOURCES
+      const customSources = await prisma.customSource.findMany();
+
+      // Unified source list for scanning
+      const allSources = [
+        ...SOURCES.map((s) => ({ name: s.name, url: s.url, homepageUrl: s.homepageUrl as string, type: s.type })),
+        ...customSources.map((cs) => ({ name: cs.name, url: cs.url, homepageUrl: cs.url, type: cs.type })),
+      ];
+
       // Emit "discovering" for all sources immediately so the UI shows all of them
-      for (const source of SOURCES) {
+      for (const source of allSources) {
         controller.enqueue(encode({ source: source.name, status: "discovering", findingsCount: 0 }));
       }
 
       // Scan all sources in parallel — each resolves independently and streams its result
       await Promise.allSettled(
-        SOURCES.map(async (source) => {
+        allSources.map(async (source) => {
           try {
             // Phase 1: Dynamic discovery — TinyFish navigates from the homepage to find the news section
             // Falls back to direct URL scan if discovery fails

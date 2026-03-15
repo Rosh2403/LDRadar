@@ -38,3 +38,11 @@ model Briefing {
   findingCount Int      @default(0)
   createdAt    DateTime @default(now())
 }
+
+model CustomSource {
+  id      String   @id @default(cuid())
+  name    String
+  url     String   @unique
+  type    String   @default("Other")
+  addedAt DateTime @default(now())
+}
