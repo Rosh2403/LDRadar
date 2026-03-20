@@ -94,17 +94,6 @@ export default function NavBar() {
           ))}
         </div>
 
-        <div style={{ marginLeft: "auto", display: "flex", alignItems: "center" }}>
-          <span
-            style={{
-              fontSize: 12,
-              color: "var(--muted)",
-              fontFamily: "monospace",
-            }}
-          >
-            institutional intelligence engine
-          </span>
-        </div>
       </div>
     </nav>
   );

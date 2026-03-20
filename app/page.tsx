@@ -5,7 +5,6 @@ import FindingCard from "@/components/FindingCard";
 import ScanProgress from "@/components/ScanProgress";
 import StatsRow from "@/components/StatsRow";
 import FilterBar from "@/components/FilterBar";
-import BriefingCard, { BriefingData } from "@/components/BriefingCard";
 
 export interface Finding {
   id: string;
@@ -30,8 +29,6 @@ export interface ScanEvent {
   source?: string;
   status?: "discovering" | "scanning" | "done" | "error";
   findingsCount?: number;
-  synthesizing?: boolean;
-  briefingReady?: boolean;
   done?: boolean;
   totalFindings?: number;
   error?: string;
@@ -40,8 +37,6 @@ export interface ScanEvent {
 export default function Dashboard() {
   const [findings, setFindings] = useState<Finding[]>([]);
   const [stats, setStats] = useState<Stats | null>(null);
-  const [briefing, setBriefing] = useState<BriefingData | null>(null);
-  const [synthesizing, setSynthesizing] = useState(false);
   const [scanning, setScanning] = useState(false);
   const [scanEvents, setScanEvents] = useState<ScanEvent[]>([]);
   const [categoryFilter, setCategoryFilter] = useState("");
@@ -63,17 +58,11 @@ export default function Dashboard() {
     setStats(data);
   }, []);
 
-  const fetchBriefing = useCallback(async () => {
-    const res = await fetch("/api/briefing");
-    const data = await res.json();
-    setBriefing(data);
-  }, []);
-
   useEffect(() => {
-    Promise.all([fetchFindings(), fetchStats(), fetchBriefing()]).finally(() =>
+    Promise.all([fetchFindings(), fetchStats()]).finally(() =>
       setLoading(false)
     );
-  }, [fetchFindings, fetchStats, fetchBriefing]);
+  }, [fetchFindings, fetchStats]);
 
   useEffect(() => {
     if (!scanning) fetchFindings();
@@ -82,7 +71,6 @@ export default function Dashboard() {
   const runScan = async () => {
     setScanning(true);
     setScanEvents([]);
-    setSynthesizing(false);
 
     try {
       const response = await fetch("/api/scan", { method: "POST" });
@@ -104,15 +92,6 @@ export default function Dashboard() {
           if (!line.trim()) continue;
           try {
             const event: ScanEvent = JSON.parse(line);
-
-            if (event.synthesizing) {
-              setSynthesizing(true);
-            }
-
-            if (event.briefingReady) {
-              setSynthesizing(false);
-              await fetchBriefing();
-            }
 
             setScanEvents((prev) => {
               if (event.source) {
@@ -138,7 +117,6 @@ export default function Dashboard() {
       }
     } finally {
       setScanning(false);
-      setSynthesizing(false);
     }
   };
 
@@ -215,9 +193,6 @@ export default function Dashboard() {
       {(scanning || scanEvents.length > 0) && (
         <ScanProgress events={scanEvents} scanning={scanning} />
       )}
-
-      {/* Intelligence Briefing */}
-      <BriefingCard briefing={briefing} synthesizing={synthesizing} />
 
       {/* Filter Bar */}
       <FilterBar
