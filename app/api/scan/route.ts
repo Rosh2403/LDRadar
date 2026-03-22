@@ -2,6 +2,7 @@ import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { SOURCES, GOAL_PROMPT, DISCOVERY_PROMPT } from "@/lib/sources";
 import { runTinyFishScan } from "@/lib/tinyfish";
+import { SCAN_CONFIG } from "@/lib/constants";
 
 export const runtime = "nodejs";
 export const maxDuration = 300;
@@ -29,6 +30,14 @@ export async function POST(_req: NextRequest) {
         ...customSources.map((cs) => ({ name: cs.name, url: cs.url, homepageUrl: cs.url, type: cs.type })),
       ];
 
+      // Batch-load all existing findings for dedup (fix N+1 query)
+      const existingFindings = await prisma.finding.findMany({
+        select: { institution: true, title: true },
+      });
+      const existingSet = new Set(
+        existingFindings.map((f) => `${f.institution}::${f.title}`)
+      );
+
       // Emit "discovering" for all sources immediately so the UI shows all of them
       for (const source of allSources) {
         controller.enqueue(encode({ source: source.name, status: "discovering", findingsCount: 0 }));
@@ -38,41 +47,41 @@ export async function POST(_req: NextRequest) {
       await Promise.allSettled(
         allSources.map(async (source) => {
           try {
-            // Phase 1: Dynamic discovery — TinyFish navigates from the homepage to find the news section
-            // Falls back to direct URL scan if discovery fails
-            let result;
-            try {
-              result = await runTinyFishScan(source.homepageUrl, DISCOVERY_PROMPT, { maxSteps: 20 });
-              // If discovery found nothing, fall back to direct URL
-              if (result.findings.length === 0) {
-                result = await runTinyFishScan(source.url, GOAL_PROMPT, { maxSteps: 15 });
-              }
-            } catch {
-              // Discovery failed entirely — fall back to direct URL
-              result = await runTinyFishScan(source.url, GOAL_PROMPT, { maxSteps: 15 });
-            }
+            // Single-phase scan: discovery from homepage (no fallback to save steps)
+            const result = await runTinyFishScan(source.homepageUrl, DISCOVERY_PROMPT, { maxSteps: SCAN_CONFIG.discoveryMaxSteps });
 
             const findings = result.findings;
 
             let newCount = 0;
             for (const finding of findings) {
-              const exists = await prisma.finding.findFirst({
-                where: { institution: source.name, title: finding.title || "Untitled" },
-                select: { id: true },
-              });
-              if (!exists) {
+              const title = finding.title || "Untitled";
+              const key = `${source.name}::${title}`;
+
+              // Skip if already exists (in-memory check)
+              if (existingSet.has(key)) continue;
+
+              // Use create with catch for unique constraint (race-safe)
+              try {
                 await prisma.finding.create({
                   data: {
                     institution: source.name,
                     type: source.type,
-                    title: finding.title || "Untitled",
+                    title,
                     summary: finding.summary || "",
                     category: finding.category || "Policy",
-                    date: finding.date || new Date().toISOString().split("T")[0],
+                    date: finding.date || new Date().toLocaleDateString("en-CA"),
                     sourceUrl: finding.sourceUrl || source.url,
                   },
                 });
+                existingSet.add(key);
                 newCount++;
+              } catch (err) {
+                // Unique constraint violation — another parallel scan inserted it first
+                if (err instanceof Error && err.message.includes("Unique constraint")) {
+                  existingSet.add(key);
+                  continue;
+                }
+                throw err;
               }
             }
 

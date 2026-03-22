@@ -12,27 +12,27 @@ export default function ScanProgress({
       style={{
         background: "var(--card)",
         border: "1px solid var(--border)",
-        borderRadius: 10,
+        borderRadius: 4,
         padding: "16px 20px",
         marginBottom: 24,
         fontFamily: "monospace",
-        fontSize: 13,
+        fontSize: 12,
       }}
     >
       <div
         style={{
-          fontSize: 11,
-          fontWeight: 600,
-          color: "var(--muted)",
+          fontSize: 10,
+          fontWeight: 700,
+          color: "var(--text)",
           textTransform: "uppercase",
-          letterSpacing: "0.8px",
+          letterSpacing: "1px",
           marginBottom: 12,
         }}
       >
         Scan Progress
       </div>
 
-      <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+      <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
         {events.map((event) => (
           <div
             key={event.source}
@@ -40,29 +40,29 @@ export default function ScanProgress({
               display: "flex",
               alignItems: "center",
               gap: 10,
-              padding: "5px 0",
-              borderBottom: "1px solid rgba(30,30,46,0.5)",
+              padding: "4px 0",
+              borderBottom: "1px solid rgba(26,26,26,0.8)",
               color:
                 event.status === "done"
-                  ? "#4ade80"
+                  ? "var(--positive)"
                   : event.status === "error"
-                  ? "#f87171"
-                  : "var(--text)",
+                  ? "var(--negative)"
+                  : "var(--text-secondary)",
             }}
           >
             <span style={{ width: 18, flexShrink: 0 }}>
               {event.status === "discovering" || event.status === "scanning" ? (
-                <SpinnerInline color={event.status === "discovering" ? "#f59e0b" : "#6366f1"} />
+                <SpinnerInline color={event.status === "discovering" ? "var(--warning)" : "var(--accent)"} />
               ) : event.status === "done" ? (
-                "✓"
+                <span style={{ color: "var(--positive)" }}>OK</span>
               ) : (
-                "✗"
+                <span style={{ color: "var(--negative)" }}>XX</span>
               )}
             </span>
             <span style={{ flex: 1, color: "inherit" }}>{event.source}</span>
             {event.status === "discovering" && (
-              <span style={{ color: "#f59e0b", fontSize: 11 }}>
-                discovering news section...
+              <span style={{ color: "var(--warning)", fontSize: 11 }}>
+                discovering...
               </span>
             )}
             {event.status === "scanning" && (
@@ -73,11 +73,11 @@ export default function ScanProgress({
             {event.status === "done" && (
               <span
                 style={{
-                  color: "#4ade80",
+                  color: "var(--positive)",
                   fontSize: 11,
-                  background: "rgba(74,222,128,0.08)",
+                  background: "rgba(0,200,83,0.08)",
                   padding: "1px 8px",
-                  borderRadius: 4,
+                  borderRadius: 2,
                 }}
               >
                 {event.findingsCount} finding{event.findingsCount !== 1 ? "s" : ""}
@@ -86,21 +86,21 @@ export default function ScanProgress({
             {event.status === "error" && (
               <span
                 style={{
-                  color: "#f87171",
+                  color: "var(--negative)",
                   fontSize: 11,
-                  background: "rgba(248,113,113,0.08)",
+                  background: "rgba(255,23,68,0.08)",
                   padding: "1px 8px",
-                  borderRadius: 4,
+                  borderRadius: 2,
                 }}
               >
-                error
+                ERROR
               </span>
             )}
           </div>
         ))}
 
         {scanning && events.length === 0 && (
-          <div style={{ color: "var(--muted)", fontSize: 12 }}>
+          <div style={{ color: "var(--warning)", fontSize: 11 }}>
             Initializing scan...
           </div>
         )}
@@ -109,14 +109,15 @@ export default function ScanProgress({
           <div
             style={{
               marginTop: 8,
-              color: "var(--muted)",
+              color: "var(--text)",
               fontSize: 11,
               textAlign: "right",
+              fontWeight: 700,
             }}
           >
-            Scan complete —{" "}
-            {events.reduce((a, e) => a + (e.findingsCount ?? 0), 0)} total
-            findings
+            SCAN COMPLETE —{" "}
+            {events.reduce((a, e) => a + (e.findingsCount ?? 0), 0)} TOTAL
+            FINDINGS
           </div>
         )}
       </div>
@@ -124,7 +125,7 @@ export default function ScanProgress({
   );
 }
 
-function SpinnerInline({ color = "#6366f1" }: { color?: string }) {
+function SpinnerInline({ color = "var(--accent)" }: { color?: string }) {
   return (
     <svg
       width="12"

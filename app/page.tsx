@@ -39,6 +39,7 @@ export default function Dashboard() {
   const [stats, setStats] = useState<Stats | null>(null);
   const [scanning, setScanning] = useState(false);
   const [scanEvents, setScanEvents] = useState<ScanEvent[]>([]);
+  const [scanError, setScanError] = useState<string | null>(null);
   const [categoryFilter, setCategoryFilter] = useState("");
   const [typeFilter, setTypeFilter] = useState("");
   const [loading, setLoading] = useState(true);
@@ -49,7 +50,7 @@ export default function Dashboard() {
     if (typeFilter) params.set("type", typeFilter);
     const res = await fetch(`/api/findings?${params}`);
     const data = await res.json();
-    setFindings(data);
+    setFindings(data.findings ?? data);
   }, [categoryFilter, typeFilter]);
 
   const fetchStats = useCallback(async () => {
@@ -71,10 +72,18 @@ export default function Dashboard() {
   const runScan = async () => {
     setScanning(true);
     setScanEvents([]);
+    setScanError(null);
 
     try {
       const response = await fetch("/api/scan", { method: "POST" });
-      if (!response.body) return;
+      if (!response.ok) {
+        setScanError(`Scan failed: ${response.status} ${response.statusText}`);
+        return;
+      }
+      if (!response.body) {
+        setScanError("No response stream from scan endpoint");
+        return;
+      }
 
       const reader = response.body.getReader();
       const decoder = new TextDecoder();
@@ -111,10 +120,12 @@ export default function Dashboard() {
               await fetchFindings();
             }
           } catch {
-            // ignore parse errors
+            // ignore parse errors for individual lines
           }
         }
       }
+    } catch (err) {
+      setScanError(err instanceof Error ? err.message : "Scan connection lost");
     } finally {
       setScanning(false);
     }
@@ -148,28 +159,31 @@ export default function Dashboard() {
             LP Radar
           </h1>
           <p style={{ fontSize: 14, color: "var(--muted)", margin: "4px 0 0" }}>
-            Institutional investor intelligence, automated
+            Where institutional capital meets intelligence
           </p>
         </div>
 
         <button
           onClick={runScan}
           disabled={scanning}
+          aria-label={scanning ? "Scan in progress" : "Run scan"}
           style={{
-            background: scanning ? "rgba(99,102,241,0.15)" : "var(--accent)",
-            color: scanning ? "var(--accent)" : "#fff",
+            background: scanning ? "rgba(255,102,0,0.15)" : "var(--accent)",
+            color: scanning ? "var(--accent)" : "#000",
             border: scanning
-              ? "1px solid rgba(99,102,241,0.3)"
+              ? "1px solid rgba(255,102,0,0.3)"
               : "1px solid transparent",
-            borderRadius: 8,
+            borderRadius: 4,
             padding: "10px 20px",
             fontSize: 14,
-            fontWeight: 600,
+            fontWeight: 700,
             cursor: scanning ? "not-allowed" : "pointer",
             display: "flex",
             alignItems: "center",
             gap: 8,
             transition: "all 0.15s",
+            textTransform: "uppercase",
+            letterSpacing: "0.5px",
           }}
         >
           {scanning ? (
@@ -188,6 +202,42 @@ export default function Dashboard() {
 
       {/* Stats */}
       {stats && <StatsRow stats={stats} />}
+
+      {/* Scan Error */}
+      {scanError && (
+        <div
+          style={{
+            background: "rgba(255,23,68,0.1)",
+            border: "1px solid rgba(255,23,68,0.3)",
+            borderRadius: 4,
+            padding: "12px 16px",
+            marginBottom: 20,
+            fontSize: 13,
+            color: "var(--negative)",
+            display: "flex",
+            alignItems: "center",
+            gap: 8,
+          }}
+        >
+          <span style={{ fontWeight: 700 }}>ERROR</span>
+          {scanError}
+          <button
+            onClick={() => setScanError(null)}
+            style={{
+              marginLeft: "auto",
+              background: "none",
+              border: "none",
+              color: "var(--negative)",
+              cursor: "pointer",
+              fontSize: 16,
+              padding: 4,
+            }}
+            aria-label="Dismiss error"
+          >
+            x
+          </button>
+        </div>
+      )}
 
       {/* Scan Progress */}
       {(scanning || scanEvents.length > 0) && (
@@ -261,14 +311,14 @@ function SkeletonFeed() {
           style={{
             background: "var(--card)",
             border: "1px solid var(--border)",
-            borderRadius: 10,
+            borderRadius: 4,
             padding: 20,
             animation: "pulse 1.5s ease-in-out infinite",
           }}
         >
-          <div style={{ height: 14, width: "30%", background: "var(--border)", borderRadius: 4, marginBottom: 12 }} />
-          <div style={{ height: 18, width: "70%", background: "var(--border)", borderRadius: 4, marginBottom: 8 }} />
-          <div style={{ height: 14, width: "90%", background: "var(--border)", borderRadius: 4 }} />
+          <div style={{ height: 14, width: "30%", background: "var(--border)", borderRadius: 2, marginBottom: 12 }} />
+          <div style={{ height: 18, width: "70%", background: "var(--border)", borderRadius: 2, marginBottom: 8 }} />
+          <div style={{ height: 14, width: "90%", background: "var(--border)", borderRadius: 2 }} />
         </div>
       ))}
     </div>
@@ -278,10 +328,7 @@ function SkeletonFeed() {
 function EmptyState({ scanning }: { scanning: boolean }) {
   return (
     <div style={{ textAlign: "center", padding: "80px 24px", color: "var(--muted)" }}>
-      <div style={{ fontSize: 48, marginBottom: 16, opacity: 0.3 }}>
-        {scanning ? "⏳" : "📡"}
-      </div>
-      <div style={{ fontSize: 18, fontWeight: 600, color: "var(--text)", marginBottom: 8 }}>
+      <div style={{ fontSize: 18, fontWeight: 700, color: "var(--text)", marginBottom: 8, textTransform: "uppercase", letterSpacing: "1px" }}>
         {scanning ? "Scanning sources..." : "No findings yet"}
       </div>
       <div style={{ fontSize: 14 }}>

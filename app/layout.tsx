@@ -7,7 +7,7 @@ const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
   title: "LP Radar — Institutional Investor Intelligence",
-  description: "Institutional investor intelligence, automated",
+  description: "Where institutional capital meets intelligence",
 };
 
 export default function RootLayout({

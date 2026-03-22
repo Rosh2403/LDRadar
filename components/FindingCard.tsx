@@ -1,54 +1,31 @@
 "use client";
 
 import { Finding } from "@/app/page";
-
-const TYPE_COLORS: Record<string, string> = {
-  Endowment: "#3b82f6",
-  "Sovereign Wealth Fund": "#22c55e",
-  "Pension Fund": "#f97316",
-  Regulatory: "#a855f7",
-};
-
-const CATEGORY_COLORS: Record<string, string> = {
-  Leadership: "#f87171",
-  Allocation: "#60a5fa",
-  Mandate: "#4ade80",
-  Policy: "#fbbf24",
-  Portfolio: "#c084fc",
-};
-
-function timeAgo(iso: string): string {
-  const diff = Date.now() - new Date(iso).getTime();
-  const mins = Math.floor(diff / 60000);
-  if (mins < 1) return "just now";
-  if (mins < 60) return `${mins}m ago`;
-  const hours = Math.floor(mins / 60);
-  if (hours < 24) return `${hours}h ago`;
-  const days = Math.floor(hours / 24);
-  return `${days}d ago`;
-}
+import { TYPE_COLORS, CATEGORY_COLORS, timeAgo } from "@/lib/constants";
 
 export default function FindingCard({ finding }: { finding: Finding }) {
-  const typeColor = TYPE_COLORS[finding.type] ?? "#6366f1";
-  const categoryColor = CATEGORY_COLORS[finding.category] ?? "#6366f1";
+  const typeColor = TYPE_COLORS[finding.type] ?? "var(--muted)";
+  const categoryColor = CATEGORY_COLORS[finding.category] ?? "var(--muted)";
 
   return (
     <div
       style={{
         background: "var(--card)",
         border: "1px solid var(--border)",
-        borderRadius: 10,
-        padding: "18px 20px",
+        borderRadius: 4,
+        padding: "16px 20px",
         transition: "border-color 0.15s, background 0.15s",
         cursor: "default",
+        borderLeft: `3px solid var(--text)`,
       }}
       onMouseEnter={(e) => {
         (e.currentTarget as HTMLDivElement).style.borderColor =
-          "rgba(99,102,241,0.35)";
-        (e.currentTarget as HTMLDivElement).style.background = "#13131c";
+          "rgba(255,140,0,0.35)";
+        (e.currentTarget as HTMLDivElement).style.background = "#0d0d0d";
       }}
       onMouseLeave={(e) => {
         (e.currentTarget as HTMLDivElement).style.borderColor = "var(--border)";
+        (e.currentTarget as HTMLDivElement).style.borderLeftColor = "var(--text)";
         (e.currentTarget as HTMLDivElement).style.background = "var(--card)";
       }}
     >
@@ -67,7 +44,9 @@ export default function FindingCard({ finding }: { finding: Finding }) {
             fontSize: 12,
             fontWeight: 700,
             color: "var(--text)",
-            letterSpacing: "0.2px",
+            letterSpacing: "0.5px",
+            textTransform: "uppercase",
+            fontFamily: "monospace",
           }}
         >
           {finding.institution}
@@ -94,7 +73,7 @@ export default function FindingCard({ finding }: { finding: Finding }) {
         style={{
           fontSize: 15,
           fontWeight: 600,
-          color: "var(--text)",
+          color: "var(--text-secondary)",
           marginBottom: 8,
           lineHeight: 1.4,
         }}
@@ -145,7 +124,7 @@ export default function FindingCard({ finding }: { finding: Finding }) {
               alignItems: "center",
               gap: 4,
               fontSize: 11,
-              color: "var(--accent)",
+              color: "var(--link)",
               textDecoration: "none",
               fontFamily: "monospace",
               maxWidth: 320,
@@ -176,11 +155,12 @@ function Badge({
       style={{
         display: "inline-block",
         padding: "2px 8px",
-        borderRadius: 5,
+        borderRadius: 2,
         fontSize: 10,
         fontWeight: 700,
         textTransform: "uppercase",
         letterSpacing: "0.5px",
+        fontFamily: "monospace",
         color,
         background: `${color}18`,
         border: `1px solid ${color}40`,

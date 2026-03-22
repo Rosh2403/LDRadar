@@ -1,17 +1,5 @@
 import { Stats } from "@/app/page";
-
-const TYPE_COLORS: Record<string, string> = {};
-
-function formatDate(iso: string | null) {
-  if (!iso) return "Never";
-  const d = new Date(iso);
-  return d.toLocaleDateString("en-US", {
-    month: "short",
-    day: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-}
+import { formatDate } from "@/lib/constants";
 
 export default function StatsRow({ stats }: { stats: Stats }) {
   const cards = [
@@ -27,7 +15,7 @@ export default function StatsRow({ stats }: { stats: Stats }) {
     },
     {
       label: "Last Scan",
-      value: formatDate(stats.lastScan),
+      value: stats.lastScan ? formatDate(stats.lastScan) : "Never",
       accent: false,
       mono: true,
     },
@@ -43,7 +31,7 @@ export default function StatsRow({ stats }: { stats: Stats }) {
       style={{
         display: "grid",
         gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
-        gap: 12,
+        gap: 8,
         marginBottom: 28,
       }}
     >
@@ -52,29 +40,30 @@ export default function StatsRow({ stats }: { stats: Stats }) {
           key={label}
           style={{
             background: "var(--card)",
-            border: `1px solid ${accent ? "rgba(99,102,241,0.4)" : "var(--border)"}`,
-            borderRadius: 10,
-            padding: "16px 20px",
+            border: `1px solid ${accent ? "rgba(255,102,0,0.4)" : "var(--border)"}`,
+            borderRadius: 4,
+            padding: "14px 18px",
           }}
         >
           <div
             style={{
-              fontSize: 11,
-              fontWeight: 600,
+              fontSize: 10,
+              fontWeight: 700,
               color: "var(--muted)",
               textTransform: "uppercase",
-              letterSpacing: "0.8px",
-              marginBottom: 8,
+              letterSpacing: "1px",
+              marginBottom: 6,
+              fontFamily: "monospace",
             }}
           >
             {label}
           </div>
           <div
             style={{
-              fontSize: mono ? 15 : 24,
+              fontSize: mono ? 14 : 22,
               fontWeight: 700,
               color: accent ? "var(--accent)" : "var(--text)",
-              fontFamily: mono ? "monospace" : "inherit",
+              fontFamily: "monospace",
               letterSpacing: "-0.5px",
             }}
           >

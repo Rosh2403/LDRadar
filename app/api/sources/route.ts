@@ -2,9 +2,17 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { SOURCES, DISCOVERY_PROMPT, GOAL_PROMPT } from "@/lib/sources";
 import { runTinyFishScan } from "@/lib/tinyfish";
+import { isUrlSafe, SCAN_CONFIG, SOURCE_TYPES } from "@/lib/constants";
+import { z } from "zod";
 
 export const runtime = "nodejs";
 export const maxDuration = 300;
+
+const addSourceSchema = z.object({
+  name: z.string().min(1).max(100).transform((s) => s.trim()),
+  url: z.string().url().max(2048).transform((s) => s.trim()),
+  type: z.enum(SOURCE_TYPES).default("Other"),
+});
 
 export async function GET() {
   const findingGroups = await prisma.finding.groupBy({
@@ -65,17 +73,25 @@ function encode(obj: unknown): Uint8Array {
 }
 
 export async function POST(req: NextRequest) {
-  const body = await req.json();
-  const { name, url, type } = body as { name: string; url: string; type: string };
-
-  // Basic validation
-  if (!name?.trim() || !url?.trim()) {
-    return NextResponse.json({ error: "Name and URL are required" }, { status: 400 });
-  }
+  let body: unknown;
   try {
-    new URL(url);
+    body = await req.json();
   } catch {
-    return NextResponse.json({ error: "Invalid URL" }, { status: 400 });
+    return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
+  }
+
+  const parsed = addSourceSchema.safeParse(body);
+  if (!parsed.success) {
+    return NextResponse.json(
+      { error: parsed.error.issues.map((i) => i.message).join(", ") },
+      { status: 400 }
+    );
+  }
+  const { name, url, type } = parsed.data;
+
+  // SSRF protection — block internal/private URLs
+  if (!isUrlSafe(url)) {
+    return NextResponse.json({ error: "URL is not allowed (internal/private addresses are blocked)" }, { status: 400 });
   }
 
   // Check for duplicate
@@ -88,7 +104,7 @@ export async function POST(req: NextRequest) {
 
   // Save to DB
   const customSource = await prisma.customSource.create({
-    data: { name: name.trim(), url: url.trim(), type: type || "Other" },
+    data: { name, url, type },
   });
 
   // Stream the scan progress back
@@ -97,36 +113,35 @@ export async function POST(req: NextRequest) {
       controller.enqueue(encode({ source: customSource.name, status: "discovering", findingsCount: 0 }));
 
       try {
-        // Try discovery from the provided URL (treated as homepage)
         let result;
         try {
-          result = await runTinyFishScan(customSource.url, DISCOVERY_PROMPT, { maxSteps: 20 });
+          result = await runTinyFishScan(customSource.url, DISCOVERY_PROMPT, { maxSteps: SCAN_CONFIG.discoveryMaxSteps });
           if (result.findings.length === 0) {
-            result = await runTinyFishScan(customSource.url, GOAL_PROMPT, { maxSteps: 15 });
+            result = await runTinyFishScan(customSource.url, GOAL_PROMPT, { maxSteps: SCAN_CONFIG.directMaxSteps });
           }
         } catch {
-          result = await runTinyFishScan(customSource.url, GOAL_PROMPT, { maxSteps: 15 });
+          result = await runTinyFishScan(customSource.url, GOAL_PROMPT, { maxSteps: SCAN_CONFIG.directMaxSteps });
         }
 
         let newCount = 0;
         for (const finding of result.findings) {
-          const exists = await prisma.finding.findFirst({
-            where: { institution: customSource.name, title: finding.title || "Untitled" },
-            select: { id: true },
-          });
-          if (!exists) {
+          const title = finding.title || "Untitled";
+          try {
             await prisma.finding.create({
               data: {
                 institution: customSource.name,
                 type: customSource.type,
-                title: finding.title || "Untitled",
+                title,
                 summary: finding.summary || "",
                 category: finding.category || "Policy",
-                date: finding.date || new Date().toISOString().split("T")[0],
+                date: finding.date || new Date().toLocaleDateString("en-CA"),
                 sourceUrl: finding.sourceUrl || customSource.url,
               },
             });
             newCount++;
+          } catch (err) {
+            if (err instanceof Error && err.message.includes("Unique constraint")) continue;
+            throw err;
           }
         }
 

@@ -24,7 +24,7 @@ export default function NavBar() {
           display: "flex",
           alignItems: "center",
           gap: 32,
-          height: 56,
+          height: 48,
         }}
       >
         <Link href="/" style={{ textDecoration: "none" }}>
@@ -33,59 +33,43 @@ export default function NavBar() {
               style={{
                 fontSize: 18,
                 fontWeight: 700,
-                color: "var(--accent)",
-                letterSpacing: "-0.5px",
-              }}
-            >
-              LP
-            </span>
-            <span
-              style={{
-                fontSize: 18,
-                fontWeight: 700,
                 color: "var(--text)",
-                letterSpacing: "-0.5px",
+                letterSpacing: "1px",
+                textTransform: "uppercase",
+                fontFamily: "monospace",
               }}
             >
-              Radar
-            </span>
-            <span
-              style={{
-                fontSize: 10,
-                background: "rgba(99,102,241,0.15)",
-                color: "var(--accent)",
-                padding: "1px 6px",
-                borderRadius: 4,
-                border: "1px solid rgba(99,102,241,0.3)",
-                fontWeight: 600,
-                letterSpacing: "0.5px",
-              }}
-            >
-              BETA
+              LP RADAR
             </span>
           </div>
         </Link>
 
-        <div style={{ display: "flex", gap: 4 }}>
+        <div style={{ display: "flex", gap: 2 }}>
           {[
-            { href: "/", label: "Dashboard" },
-            { href: "/sources", label: "Sources" },
+            { href: "/", label: "DASHBOARD" },
+            { href: "/sources", label: "SOURCES" },
           ].map(({ href, label }) => (
             <Link
               key={href}
               href={href}
               style={{
                 padding: "6px 12px",
-                borderRadius: 6,
-                fontSize: 14,
-                fontWeight: 500,
+                borderRadius: 2,
+                fontSize: 12,
+                fontWeight: 700,
                 textDecoration: "none",
+                letterSpacing: "0.5px",
+                fontFamily: "monospace",
                 color:
-                  pathname === href ? "var(--accent)" : "var(--muted)",
+                  pathname === href ? "var(--text)" : "var(--muted)",
                 background:
                   pathname === href
-                    ? "rgba(99,102,241,0.1)"
+                    ? "rgba(255,140,0,0.1)"
                     : "transparent",
+                borderBottom:
+                  pathname === href
+                    ? "2px solid var(--text)"
+                    : "2px solid transparent",
                 transition: "all 0.15s",
               }}
             >
@@ -93,7 +77,6 @@ export default function NavBar() {
             </Link>
           ))}
         </div>
-
       </div>
     </nav>
   );

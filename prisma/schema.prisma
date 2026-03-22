@@ -17,6 +17,11 @@ model Finding {
   date        String
   sourceUrl   String
   scannedAt   DateTime @default(now())
+
+  @@unique([institution, title])
+  @@index([scannedAt(sort: Desc)])
+  @@index([category])
+  @@index([type])
 }
 
 model ScanRun {
@@ -26,17 +31,8 @@ model ScanRun {
   status         String
   sourcesScanned Int       @default(0)
   findingsCount  Int       @default(0)
-}
 
-model Briefing {
-  id           String   @id @default(cuid())
-  summary      String
-  patterns     String
-  hotSectors   String
-  activeLPs    String
-  watchList    String
-  findingCount Int      @default(0)
-  createdAt    DateTime @default(now())
+  @@index([status, completedAt(sort: Desc)])
 }
 
 model CustomSource {

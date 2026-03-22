@@ -1,19 +1,6 @@
 "use client";
 
-const CATEGORIES = [
-  "Leadership",
-  "Allocation",
-  "Mandate",
-  "Policy",
-  "Portfolio",
-];
-
-const TYPES = [
-  "Endowment",
-  "Sovereign Wealth Fund",
-  "Pension Fund",
-  "Regulatory",
-];
+import { CATEGORIES, TYPES, CATEGORY_COLORS, TYPE_COLORS } from "@/lib/constants";
 
 export default function FilterBar({
   categoryFilter,
@@ -27,38 +14,25 @@ export default function FilterBar({
   onTypeChange: (v: string) => void;
 }) {
   const chipStyle = (active: boolean, color?: string) => ({
-    padding: "5px 12px",
-    borderRadius: 6,
-    fontSize: 12,
-    fontWeight: 600,
+    padding: "4px 10px",
+    borderRadius: 2,
+    fontSize: 11,
+    fontWeight: 700,
     cursor: "pointer",
+    fontFamily: "monospace",
+    letterSpacing: "0.3px",
     border: active
       ? `1px solid ${color ?? "var(--accent)"}`
       : "1px solid var(--border)",
     background: active
       ? color
         ? `${color}22`
-        : "rgba(99,102,241,0.12)"
+        : "rgba(255,102,0,0.12)"
       : "var(--card)",
     color: active ? (color ?? "var(--accent)") : "var(--muted)",
     transition: "all 0.1s",
     whiteSpace: "nowrap" as const,
   });
-
-  const categoryColors: Record<string, string> = {
-    Leadership: "#f87171",
-    Allocation: "#60a5fa",
-    Mandate: "#4ade80",
-    Policy: "#fbbf24",
-    Portfolio: "#c084fc",
-  };
-
-  const typeColors: Record<string, string> = {
-    Endowment: "#60a5fa",
-    "Sovereign Wealth Fund": "#4ade80",
-    "Pension Fund": "#fb923c",
-    Regulatory: "#c084fc",
-  };
 
   return (
     <div
@@ -72,15 +46,16 @@ export default function FilterBar({
         borderBottom: "1px solid var(--border)",
       }}
     >
-      <div style={{ display: "flex", gap: 6, flexWrap: "wrap", alignItems: "center" }}>
+      <div style={{ display: "flex", gap: 4, flexWrap: "wrap", alignItems: "center" }}>
         <span
           style={{
-            fontSize: 11,
+            fontSize: 10,
             color: "var(--muted)",
-            fontWeight: 600,
+            fontWeight: 700,
             textTransform: "uppercase",
-            letterSpacing: "0.6px",
+            letterSpacing: "0.8px",
             marginRight: 4,
+            fontFamily: "monospace",
           }}
         >
           Category
@@ -88,14 +63,16 @@ export default function FilterBar({
         <button
           style={chipStyle(!categoryFilter)}
           onClick={() => onCategoryChange("")}
+          aria-label="Show all categories"
         >
-          All
+          ALL
         </button>
         {CATEGORIES.map((c) => (
           <button
             key={c}
-            style={chipStyle(categoryFilter === c, categoryColors[c])}
+            style={chipStyle(categoryFilter === c, CATEGORY_COLORS[c])}
             onClick={() => onCategoryChange(categoryFilter === c ? "" : c)}
+            aria-label={`Filter by ${c}`}
           >
             {c}
           </button>
@@ -105,21 +82,22 @@ export default function FilterBar({
       <div
         style={{
           width: 1,
-          height: 24,
+          height: 20,
           background: "var(--border)",
           flexShrink: 0,
         }}
       />
 
-      <div style={{ display: "flex", gap: 6, flexWrap: "wrap", alignItems: "center" }}>
+      <div style={{ display: "flex", gap: 4, flexWrap: "wrap", alignItems: "center" }}>
         <span
           style={{
-            fontSize: 11,
+            fontSize: 10,
             color: "var(--muted)",
-            fontWeight: 600,
+            fontWeight: 700,
             textTransform: "uppercase",
-            letterSpacing: "0.6px",
+            letterSpacing: "0.8px",
             marginRight: 4,
+            fontFamily: "monospace",
           }}
         >
           Type
@@ -127,14 +105,16 @@ export default function FilterBar({
         <button
           style={chipStyle(!typeFilter)}
           onClick={() => onTypeChange("")}
+          aria-label="Show all types"
         >
-          All
+          ALL
         </button>
         {TYPES.map((t) => (
           <button
             key={t}
-            style={chipStyle(typeFilter === t, typeColors[t])}
+            style={chipStyle(typeFilter === t, TYPE_COLORS[t])}
             onClick={() => onTypeChange(typeFilter === t ? "" : t)}
+            aria-label={`Filter by ${t}`}
           >
             {t}
           </button>

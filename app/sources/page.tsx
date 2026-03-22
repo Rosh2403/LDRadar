@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { TYPE_COLORS, SOURCE_TYPES, formatDate } from "@/lib/constants";
 
 interface Source {
   id: string | null;
@@ -17,31 +18,10 @@ interface ScanProgress {
   findingsCount: number;
 }
 
-const TYPE_COLORS: Record<string, string> = {
-  Endowment: "#3b82f6",
-  "Sovereign Wealth Fund": "#22c55e",
-  "Pension Fund": "#f97316",
-  Regulatory: "#a855f7",
-  Other: "#94a3b8",
-};
-
-const SOURCE_TYPES = ["Endowment", "Sovereign Wealth Fund", "Pension Fund", "Regulatory", "Other"];
-
-function formatDate(iso: string | null) {
-  if (!iso) return "—";
-  const d = new Date(iso);
-  return d.toLocaleDateString("en-US", {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-}
-
 export default function SourcesPage() {
   const [sources, setSources] = useState<Source[]>([]);
   const [loading, setLoading] = useState(true);
+  const [deleting, setDeleting] = useState<string | null>(null);
 
   // Add source form state
   const [showForm, setShowForm] = useState(false);
@@ -121,11 +101,29 @@ export default function SourcesPage() {
 
   const handleDelete = async (id: string, name: string) => {
     if (!confirm(`Remove "${name}" and all its findings?`)) return;
-    await fetch(`/api/sources/${id}`, { method: "DELETE" });
-    fetchSources();
+    setDeleting(id);
+    try {
+      await fetch(`/api/sources/${id}`, { method: "DELETE" });
+      fetchSources();
+    } finally {
+      setDeleting(null);
+    }
   };
 
   const customCount = sources.filter((s) => s.isCustom).length;
+
+  const inputStyle = {
+    width: "100%",
+    background: "#000",
+    border: "1px solid var(--border)",
+    borderRadius: 2,
+    padding: "9px 12px",
+    fontSize: 13,
+    color: "var(--text)",
+    fontFamily: "monospace",
+    outline: "none",
+    boxSizing: "border-box" as const,
+  };
 
   return (
     <div>
@@ -148,31 +146,37 @@ export default function SourcesPage() {
               fontWeight: 700,
               color: "var(--text)",
               margin: 0,
-              letterSpacing: "-0.5px",
+              letterSpacing: "1px",
+              textTransform: "uppercase",
+              fontFamily: "monospace",
             }}
           >
             Sources
           </h1>
-          <p style={{ fontSize: 14, color: "var(--muted)", margin: "4px 0 0" }}>
+          <p style={{ fontSize: 13, color: "var(--muted)", margin: "4px 0 0", fontFamily: "monospace" }}>
             {sources.length} sources monitored
-            {customCount > 0 && ` · ${customCount} custom`}
+            {customCount > 0 && ` | ${customCount} custom`}
           </p>
         </div>
 
         <button
           onClick={() => { setShowForm(!showForm); setAddError(""); setAddProgress(null); }}
+          aria-label={showForm ? "Cancel adding source" : "Add source"}
           style={{
-            background: showForm ? "rgba(99,102,241,0.15)" : "var(--accent)",
-            color: showForm ? "var(--accent)" : "#fff",
-            border: showForm ? "1px solid rgba(99,102,241,0.3)" : "1px solid transparent",
-            borderRadius: 8,
+            background: showForm ? "rgba(255,102,0,0.15)" : "var(--accent)",
+            color: showForm ? "var(--accent)" : "#000",
+            border: showForm ? "1px solid rgba(255,102,0,0.3)" : "1px solid transparent",
+            borderRadius: 4,
             padding: "9px 18px",
-            fontSize: 13,
-            fontWeight: 600,
+            fontSize: 12,
+            fontWeight: 700,
             cursor: "pointer",
             display: "flex",
             alignItems: "center",
             gap: 7,
+            textTransform: "uppercase",
+            letterSpacing: "0.5px",
+            fontFamily: "monospace",
           }}
         >
           <PlusIcon />
@@ -185,28 +189,29 @@ export default function SourcesPage() {
         <div
           style={{
             background: "var(--card)",
-            border: "1px solid rgba(99,102,241,0.3)",
-            borderRadius: 10,
+            border: "1px solid rgba(255,102,0,0.3)",
+            borderRadius: 4,
             padding: "20px 24px",
             marginBottom: 20,
           }}
         >
           <div
             style={{
-              fontSize: 11,
+              fontSize: 10,
               fontWeight: 700,
               color: "var(--accent)",
               textTransform: "uppercase",
-              letterSpacing: "0.8px",
+              letterSpacing: "1px",
               marginBottom: 16,
+              fontFamily: "monospace",
             }}
           >
-            ✦ Add Custom Source
+            ADD CUSTOM SOURCE
           </div>
 
           <div style={{ display: "flex", gap: 12, flexWrap: "wrap", alignItems: "flex-end" }}>
             <div style={{ flex: "2 1 200px" }}>
-              <label style={{ fontSize: 11, color: "var(--muted)", display: "block", marginBottom: 6 }}>
+              <label style={{ fontSize: 10, color: "var(--muted)", display: "block", marginBottom: 6, fontFamily: "monospace", textTransform: "uppercase", letterSpacing: "0.5px" }}>
                 URL (homepage)
               </label>
               <input
@@ -215,23 +220,12 @@ export default function SourcesPage() {
                 onChange={(e) => setForm((f) => ({ ...f, url: e.target.value }))}
                 placeholder="https://www.blackrock.com/"
                 disabled={adding}
-                style={{
-                  width: "100%",
-                  background: "#0a0a0f",
-                  border: "1px solid var(--border)",
-                  borderRadius: 7,
-                  padding: "9px 12px",
-                  fontSize: 13,
-                  color: "var(--text)",
-                  fontFamily: "monospace",
-                  outline: "none",
-                  boxSizing: "border-box",
-                }}
+                style={inputStyle}
               />
             </div>
 
             <div style={{ flex: "1.5 1 160px" }}>
-              <label style={{ fontSize: 11, color: "var(--muted)", display: "block", marginBottom: 6 }}>
+              <label style={{ fontSize: 10, color: "var(--muted)", display: "block", marginBottom: 6, fontFamily: "monospace", textTransform: "uppercase", letterSpacing: "0.5px" }}>
                 Institution Name
               </label>
               <input
@@ -240,40 +234,19 @@ export default function SourcesPage() {
                 onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
                 placeholder="BlackRock"
                 disabled={adding}
-                style={{
-                  width: "100%",
-                  background: "#0a0a0f",
-                  border: "1px solid var(--border)",
-                  borderRadius: 7,
-                  padding: "9px 12px",
-                  fontSize: 13,
-                  color: "var(--text)",
-                  outline: "none",
-                  boxSizing: "border-box",
-                }}
+                style={inputStyle}
               />
             </div>
 
             <div style={{ flex: "1 1 140px" }}>
-              <label style={{ fontSize: 11, color: "var(--muted)", display: "block", marginBottom: 6 }}>
+              <label style={{ fontSize: 10, color: "var(--muted)", display: "block", marginBottom: 6, fontFamily: "monospace", textTransform: "uppercase", letterSpacing: "0.5px" }}>
                 Type
               </label>
               <select
                 value={form.type}
                 onChange={(e) => setForm((f) => ({ ...f, type: e.target.value }))}
                 disabled={adding}
-                style={{
-                  width: "100%",
-                  background: "#0a0a0f",
-                  border: "1px solid var(--border)",
-                  borderRadius: 7,
-                  padding: "9px 12px",
-                  fontSize: 13,
-                  color: "var(--text)",
-                  outline: "none",
-                  cursor: "pointer",
-                  boxSizing: "border-box",
-                }}
+                style={{ ...inputStyle, cursor: "pointer" }}
               >
                 {SOURCE_TYPES.map((t) => (
                   <option key={t} value={t}>{t}</option>
@@ -285,19 +258,22 @@ export default function SourcesPage() {
               onClick={handleAddSource}
               disabled={adding}
               style={{
-                background: adding ? "rgba(99,102,241,0.15)" : "var(--accent)",
-                color: adding ? "var(--accent)" : "#fff",
+                background: adding ? "rgba(255,102,0,0.15)" : "var(--accent)",
+                color: adding ? "var(--accent)" : "#000",
                 border: "1px solid transparent",
-                borderRadius: 7,
+                borderRadius: 2,
                 padding: "9px 20px",
-                fontSize: 13,
-                fontWeight: 600,
+                fontSize: 12,
+                fontWeight: 700,
                 cursor: adding ? "not-allowed" : "pointer",
                 whiteSpace: "nowrap",
                 display: "flex",
                 alignItems: "center",
                 gap: 7,
                 flexShrink: 0,
+                textTransform: "uppercase",
+                letterSpacing: "0.5px",
+                fontFamily: "monospace",
               }}
             >
               {adding ? <><SpinnerIcon color="var(--accent)" /> Scanning...</> : "Add & Scan"}
@@ -312,39 +288,40 @@ export default function SourcesPage() {
                 display: "flex",
                 alignItems: "center",
                 gap: 10,
-                fontSize: 13,
+                fontSize: 12,
                 padding: "10px 14px",
-                background: "#0a0a0f",
-                borderRadius: 7,
+                background: "#000",
+                borderRadius: 2,
                 border: "1px solid var(--border)",
+                fontFamily: "monospace",
               }}
             >
               {addProgress.status === "discovering" ? (
                 <>
-                  <SpinnerIcon color="#f59e0b" />
-                  <span style={{ color: "#f59e0b" }}>
+                  <SpinnerIcon color="var(--warning)" />
+                  <span style={{ color: "var(--warning)" }}>
                     Discovering news section on <strong style={{ color: "var(--text)" }}>{form.name || form.url}</strong>...
                   </span>
                 </>
               ) : addProgress.status === "done" ? (
                 <>
-                  <span style={{ color: "#4ade80" }}>✓</span>
-                  <span style={{ color: "#4ade80" }}>
+                  <span style={{ color: "var(--positive)", fontWeight: 700 }}>OK</span>
+                  <span style={{ color: "var(--positive)" }}>
                     Found <strong>{addProgress.findingsCount}</strong> finding{addProgress.findingsCount !== 1 ? "s" : ""} from {form.name}
                   </span>
                 </>
               ) : (
                 <>
-                  <span style={{ color: "#f87171" }}>✗</span>
-                  <span style={{ color: "#f87171" }}>Scan failed — source saved, try again on next full scan</span>
+                  <span style={{ color: "var(--negative)", fontWeight: 700 }}>ERR</span>
+                  <span style={{ color: "var(--negative)" }}>Scan failed — source saved, try again on next full scan</span>
                 </>
               )}
             </div>
           )}
 
           {addError && (
-            <div style={{ marginTop: 10, fontSize: 13, color: "#f87171" }}>
-              {addError}
+            <div style={{ marginTop: 10, fontSize: 12, color: "var(--negative)", fontFamily: "monospace" }}>
+              ERROR: {addError}
             </div>
           )}
         </div>
@@ -357,7 +334,7 @@ export default function SourcesPage() {
           style={{
             background: "var(--card)",
             border: "1px solid var(--border)",
-            borderRadius: 10,
+            borderRadius: 4,
             overflow: "hidden",
           }}
         >
@@ -368,12 +345,13 @@ export default function SourcesPage() {
               gridTemplateColumns: "2fr 1fr 3fr 1.5fr 100px 80px 40px",
               padding: "10px 20px",
               borderBottom: "1px solid var(--border)",
-              fontSize: 11,
-              fontWeight: 600,
-              color: "var(--muted)",
+              fontSize: 10,
+              fontWeight: 700,
+              color: "var(--text)",
               textTransform: "uppercase",
-              letterSpacing: "0.7px",
+              letterSpacing: "1px",
               gap: 16,
+              fontFamily: "monospace",
             }}
           >
             <span>Name</span>
@@ -392,6 +370,7 @@ export default function SourcesPage() {
               source={s}
               last={i === sources.length - 1}
               onDelete={s.isCustom && s.id ? () => handleDelete(s.id!, s.name) : undefined}
+              isDeleting={deleting === s.id}
             />
           ))}
         </div>
@@ -404,12 +383,14 @@ function SourceRow({
   source,
   last,
   onDelete,
+  isDeleting,
 }: {
   source: Source;
   last: boolean;
   onDelete?: () => void;
+  isDeleting?: boolean;
 }) {
-  const color = TYPE_COLORS[source.type] ?? "#6366f1";
+  const color = TYPE_COLORS[source.type] ?? "var(--muted)";
   const hasBeenScanned = source.lastScanned !== null;
 
   return (
@@ -417,13 +398,14 @@ function SourceRow({
       style={{
         display: "grid",
         gridTemplateColumns: "2fr 1fr 3fr 1.5fr 100px 80px 40px",
-        padding: "14px 20px",
+        padding: "12px 20px",
         borderBottom: last ? "none" : "1px solid var(--border)",
         gap: 16,
         alignItems: "center",
         transition: "background 0.1s",
+        opacity: isDeleting ? 0.5 : 1,
       }}
-      onMouseEnter={(e) => { (e.currentTarget as HTMLDivElement).style.background = "#13131c"; }}
+      onMouseEnter={(e) => { (e.currentTarget as HTMLDivElement).style.background = "#0d0d0d"; }}
       onMouseLeave={(e) => { (e.currentTarget as HTMLDivElement).style.background = "transparent"; }}
     >
       {/* Name + Custom badge */}
@@ -437,12 +419,13 @@ function SourceRow({
       >
         <span
           style={{
-            fontSize: 13,
-            fontWeight: 600,
-            color: "var(--text)",
+            fontSize: 12,
+            fontWeight: 700,
+            color: "var(--text-secondary)",
             overflow: "hidden",
             textOverflow: "ellipsis",
             whiteSpace: "nowrap",
+            fontFamily: "monospace",
           }}
         >
           {source.name}
@@ -454,12 +437,13 @@ function SourceRow({
               fontWeight: 700,
               textTransform: "uppercase",
               letterSpacing: "0.6px",
-              color: "#f59e0b",
-              background: "rgba(245,158,11,0.12)",
-              border: "1px solid rgba(245,158,11,0.3)",
-              borderRadius: 4,
+              color: "var(--warning)",
+              background: "rgba(255,171,0,0.12)",
+              border: "1px solid rgba(255,171,0,0.3)",
+              borderRadius: 2,
               padding: "1px 6px",
               flexShrink: 0,
+              fontFamily: "monospace",
             }}
           >
             Custom
@@ -473,11 +457,12 @@ function SourceRow({
           style={{
             display: "inline-block",
             padding: "2px 8px",
-            borderRadius: 5,
+            borderRadius: 2,
             fontSize: 10,
             fontWeight: 700,
             textTransform: "uppercase",
             letterSpacing: "0.5px",
+            fontFamily: "monospace",
             color,
             background: `${color}18`,
             border: `1px solid ${color}40`,
@@ -494,7 +479,7 @@ function SourceRow({
         rel="noopener noreferrer"
         style={{
           fontSize: 11,
-          color: "var(--accent)",
+          color: "var(--link)",
           textDecoration: "none",
           fontFamily: "monospace",
           overflow: "hidden",
@@ -510,7 +495,7 @@ function SourceRow({
       </a>
 
       {/* Last Scanned */}
-      <span style={{ fontSize: 12, color: "var(--muted)", fontFamily: "monospace" }}>
+      <span style={{ fontSize: 11, color: "var(--muted)", fontFamily: "monospace" }}>
         {formatDate(source.lastScanned)}
       </span>
 
@@ -519,8 +504,9 @@ function SourceRow({
         style={{
           fontSize: 14,
           fontWeight: 700,
-          color: source.findingsCount > 0 ? "var(--accent)" : "var(--muted)",
+          color: source.findingsCount > 0 ? "var(--text)" : "var(--muted)",
           textAlign: "right",
+          fontFamily: "monospace",
         }}
       >
         {source.findingsCount}
@@ -534,14 +520,15 @@ function SourceRow({
             alignItems: "center",
             gap: 5,
             padding: "3px 10px",
-            borderRadius: 20,
+            borderRadius: 2,
             fontSize: 10,
-            fontWeight: 600,
+            fontWeight: 700,
             textTransform: "uppercase",
             letterSpacing: "0.5px",
-            background: hasBeenScanned ? "rgba(74,222,128,0.1)" : "rgba(100,116,139,0.1)",
-            color: hasBeenScanned ? "#4ade80" : "var(--muted)",
-            border: `1px solid ${hasBeenScanned ? "rgba(74,222,128,0.3)" : "var(--border)"}`,
+            fontFamily: "monospace",
+            background: hasBeenScanned ? "rgba(0,200,83,0.1)" : "rgba(102,102,102,0.1)",
+            color: hasBeenScanned ? "var(--positive)" : "var(--muted)",
+            border: `1px solid ${hasBeenScanned ? "rgba(0,200,83,0.3)" : "var(--border)"}`,
           }}
         >
           <span
@@ -549,7 +536,7 @@ function SourceRow({
               width: 5,
               height: 5,
               borderRadius: "50%",
-              background: hasBeenScanned ? "#4ade80" : "var(--muted)",
+              background: hasBeenScanned ? "var(--positive)" : "var(--muted)",
               flexShrink: 0,
             }}
           />
@@ -562,19 +549,21 @@ function SourceRow({
         {onDelete && (
           <button
             onClick={onDelete}
+            disabled={isDeleting}
             title="Remove source"
+            aria-label={`Remove ${source.name}`}
             style={{
               background: "none",
               border: "none",
-              cursor: "pointer",
+              cursor: isDeleting ? "not-allowed" : "pointer",
               color: "var(--muted)",
               padding: 4,
-              borderRadius: 4,
+              borderRadius: 2,
               display: "flex",
               alignItems: "center",
               transition: "color 0.1s",
             }}
-            onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.color = "#f87171"; }}
+            onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.color = "var(--negative)"; }}
             onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.color = "var(--muted)"; }}
           >
             <TrashIcon />
@@ -605,7 +594,7 @@ function TrashIcon() {
   );
 }
 
-function SpinnerIcon({ color = "#6366f1" }: { color?: string }) {
+function SpinnerIcon({ color = "var(--accent)" }: { color?: string }) {
   return (
     <svg
       width="13"
@@ -648,7 +637,7 @@ function SkeletonTable() {
       style={{
         background: "var(--card)",
         border: "1px solid var(--border)",
-        borderRadius: 10,
+        borderRadius: 4,
         overflow: "hidden",
       }}
     >
@@ -664,9 +653,9 @@ function SkeletonTable() {
             gap: 16,
           }}
         >
-          <div style={{ height: 14, width: "20%", background: "var(--border)", borderRadius: 4 }} />
-          <div style={{ height: 14, width: "10%", background: "var(--border)", borderRadius: 4 }} />
-          <div style={{ height: 14, width: "30%", background: "var(--border)", borderRadius: 4 }} />
+          <div style={{ height: 14, width: "20%", background: "var(--border)", borderRadius: 2 }} />
+          <div style={{ height: 14, width: "10%", background: "var(--border)", borderRadius: 2 }} />
+          <div style={{ height: 14, width: "30%", background: "var(--border)", borderRadius: 2 }} />
         </div>
       ))}
     </div>
