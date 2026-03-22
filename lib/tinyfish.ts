@@ -71,7 +71,7 @@ export async function runTinyFishScan(
   // Idle-based abort: resets every time we receive data from TinyFish.
   // Only fires if TinyFish stops sending heartbeats/events entirely.
   const controller = new AbortController();
-  let idleTimer: ReturnType<typeof setTimeout>;
+  let idleTimer: ReturnType<typeof setTimeout> | undefined;
   const resetIdle = () => {
     clearTimeout(idleTimer);
     idleTimer = setTimeout(() => controller.abort(), SCAN_CONFIG.idleTimeoutMs);
