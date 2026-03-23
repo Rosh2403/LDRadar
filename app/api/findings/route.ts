@@ -14,9 +14,18 @@ export async function GET(req: NextRequest) {
   );
   const offset = Math.max(parseInt(searchParams.get("offset") ?? "0", 10) || 0, 0);
 
-  const where: Record<string, string> = {};
+  const search = searchParams.get("search");
+
+  const where: Record<string, unknown> = {};
   if (category) where.category = category;
   if (type) where.type = type;
+  if (search) {
+    where.OR = [
+      { institution: { contains: search, mode: "insensitive" } },
+      { title: { contains: search, mode: "insensitive" } },
+      { summary: { contains: search, mode: "insensitive" } },
+    ];
+  }
 
   const [findings, total] = await Promise.all([
     prisma.finding.findMany({

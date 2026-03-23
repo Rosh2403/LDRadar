@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import FindingCard from "@/components/FindingCard";
 import ScanProgress from "@/components/ScanProgress";
 import StatsRow from "@/components/StatsRow";
@@ -42,16 +42,20 @@ export default function Dashboard() {
   const [scanError, setScanError] = useState<string | null>(null);
   const [categoryFilter, setCategoryFilter] = useState("");
   const [typeFilter, setTypeFilter] = useState("");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchInput, setSearchInput] = useState("");
   const [loading, setLoading] = useState(true);
+  const debounceRef = useRef<NodeJS.Timeout | null>(null);
 
   const fetchFindings = useCallback(async () => {
     const params = new URLSearchParams();
     if (categoryFilter) params.set("category", categoryFilter);
     if (typeFilter) params.set("type", typeFilter);
+    if (searchQuery) params.set("search", searchQuery);
     const res = await fetch(`/api/findings?${params}`);
     const data = await res.json();
     setFindings(data.findings ?? data);
-  }, [categoryFilter, typeFilter]);
+  }, [categoryFilter, typeFilter, searchQuery]);
 
   const fetchStats = useCallback(async () => {
     const res = await fetch("/api/stats");
@@ -67,7 +71,7 @@ export default function Dashboard() {
 
   useEffect(() => {
     if (!scanning) fetchFindings();
-  }, [categoryFilter, typeFilter, scanning, fetchFindings]);
+  }, [categoryFilter, typeFilter, searchQuery, scanning, fetchFindings]);
 
   const runScan = async () => {
     setScanning(true);
@@ -202,6 +206,71 @@ export default function Dashboard() {
 
       {/* Stats */}
       {stats && <StatsRow stats={stats} />}
+
+      {/* Search Bar */}
+      <div style={{ marginBottom: 20 }}>
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            background: "var(--card)",
+            border: "1px solid var(--border)",
+            borderRadius: 4,
+            padding: "0 12px",
+            gap: 8,
+          }}
+        >
+          <svg
+            width="14"
+            height="14"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="var(--muted)"
+            strokeWidth="2"
+          >
+            <circle cx="11" cy="11" r="8" />
+            <path d="m21 21-4.35-4.35" />
+          </svg>
+          <input
+            type="text"
+            value={searchInput}
+            onChange={(e) => {
+              const val = e.target.value;
+              setSearchInput(val);
+              if (debounceRef.current) clearTimeout(debounceRef.current);
+              debounceRef.current = setTimeout(() => setSearchQuery(val), 300);
+            }}
+            placeholder="Search institutions, titles, summaries..."
+            style={{
+              flex: 1,
+              background: "transparent",
+              border: "none",
+              outline: "none",
+              color: "var(--text-secondary)",
+              fontSize: 13,
+              fontFamily: "monospace",
+              padding: "10px 0",
+            }}
+          />
+          {searchInput && (
+            <button
+              onClick={() => { setSearchInput(""); setSearchQuery(""); }}
+              style={{
+                background: "none",
+                border: "none",
+                color: "var(--muted)",
+                cursor: "pointer",
+                fontSize: 14,
+                padding: 4,
+                fontFamily: "monospace",
+              }}
+              aria-label="Clear search"
+            >
+              ✕
+            </button>
+          )}
+        </div>
+      </div>
 
       {/* Scan Error */}
       {scanError && (
