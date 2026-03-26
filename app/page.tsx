@@ -45,6 +45,7 @@ export default function Dashboard() {
   const [searchQuery, setSearchQuery] = useState("");
   const [searchInput, setSearchInput] = useState("");
   const [loading, setLoading] = useState(true);
+  const [clearing, setClearing] = useState(false);
   const debounceRef = useRef<NodeJS.Timeout | null>(null);
 
   const fetchFindings = useCallback(async () => {
@@ -72,6 +73,19 @@ export default function Dashboard() {
   useEffect(() => {
     if (!scanning) fetchFindings();
   }, [categoryFilter, typeFilter, searchQuery, scanning, fetchFindings]);
+
+  const clearAll = async () => {
+    if (!confirm("Clear all findings from the database? This cannot be undone.")) return;
+    setClearing(true);
+    try {
+      await fetch("/api/findings", { method: "DELETE" });
+      setFindings([]);
+      setScanEvents([]);
+      await fetchStats();
+    } finally {
+      setClearing(false);
+    }
+  };
 
   const runScan = async () => {
     setScanning(true);
@@ -167,41 +181,78 @@ export default function Dashboard() {
           </p>
         </div>
 
-        <button
-          onClick={runScan}
-          disabled={scanning}
-          aria-label={scanning ? "Scan in progress" : "Run scan"}
-          style={{
-            background: scanning ? "rgba(255,102,0,0.15)" : "var(--accent)",
-            color: scanning ? "var(--accent)" : "#000",
-            border: scanning
-              ? "1px solid rgba(255,102,0,0.3)"
-              : "1px solid transparent",
-            borderRadius: 4,
-            padding: "10px 20px",
-            fontSize: 14,
-            fontWeight: 700,
-            cursor: scanning ? "not-allowed" : "pointer",
-            display: "flex",
-            alignItems: "center",
-            gap: 8,
-            transition: "all 0.15s",
-            textTransform: "uppercase",
-            letterSpacing: "0.5px",
-          }}
-        >
-          {scanning ? (
-            <>
-              <SpinnerIcon />
-              Scanning...
-            </>
-          ) : (
-            <>
-              <ScanIcon />
-              Run Scan
-            </>
-          )}
-        </button>
+        <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+          <button
+            onClick={clearAll}
+            disabled={clearing || scanning}
+            aria-label="Clear all findings"
+            style={{
+              background: "transparent",
+              color: clearing ? "var(--muted)" : "var(--negative)",
+              border: `1px solid ${clearing ? "var(--border)" : "rgba(255,23,68,0.4)"}`,
+              borderRadius: 4,
+              padding: "10px 20px",
+              fontSize: 14,
+              fontWeight: 700,
+              cursor: clearing || scanning ? "not-allowed" : "pointer",
+              display: "flex",
+              alignItems: "center",
+              gap: 8,
+              transition: "all 0.15s",
+              textTransform: "uppercase",
+              letterSpacing: "0.5px",
+              opacity: scanning ? 0.4 : 1,
+            }}
+          >
+            {clearing ? (
+              <>
+                <SpinnerIcon />
+                Clearing...
+              </>
+            ) : (
+              <>
+                <TrashIcon />
+                Clear
+              </>
+            )}
+          </button>
+
+          <button
+            onClick={runScan}
+            disabled={scanning}
+            aria-label={scanning ? "Scan in progress" : "Run scan"}
+            style={{
+              background: scanning ? "rgba(255,102,0,0.15)" : "var(--accent)",
+              color: scanning ? "var(--accent)" : "#000",
+              border: scanning
+                ? "1px solid rgba(255,102,0,0.3)"
+                : "1px solid transparent",
+              borderRadius: 4,
+              padding: "10px 20px",
+              fontSize: 14,
+              fontWeight: 700,
+              cursor: scanning ? "not-allowed" : "pointer",
+              display: "flex",
+              alignItems: "center",
+              gap: 8,
+              transition: "all 0.15s",
+              textTransform: "uppercase",
+              letterSpacing: "0.5px",
+            }}
+          >
+            {scanning ? (
+              <>
+                <SpinnerIcon />
+                Scanning...
+              </>
+            ) : (
+              <>
+                <ScanIcon />
+                Run Scan
+              </>
+            )}
+          </button>
+        </div>
       </div>
 
       {/* Stats */}
@@ -366,6 +417,24 @@ function ScanIcon() {
     >
       <circle cx="11" cy="11" r="8" />
       <path d="m21 21-4.35-4.35" />
+    </svg>
+  );
+}
+
+function TrashIcon() {
+  return (
+    <svg
+      width="14"
+      height="14"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+    >
+      <polyline points="3 6 5 6 21 6" />
+      <path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6" />
+      <path d="M10 11v6M14 11v6" />
+      <path d="M9 6V4a1 1 0 011-1h4a1 1 0 011 1v2" />
     </svg>
   );
 }

@@ -49,3 +49,13 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: "Failed to fetch findings" }, { status: 500 });
   }
 }
+
+export async function DELETE() {
+  try {
+    const { count } = await prisma.finding.deleteMany({});
+    return NextResponse.json({ deleted: count });
+  } catch (err) {
+    console.error("[findings] Clear error:", err);
+    return NextResponse.json({ error: "Failed to clear findings" }, { status: 500 });
+  }
+}
